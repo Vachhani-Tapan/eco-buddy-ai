@@ -1,3 +1,10 @@
+VALID_TRANSPORT = {"Car", "Bike", "Public Transport", "Walking"}
+VALID_DIET = {"Vegetarian", "Non-Vegetarian"}
+MAX_DISTANCE = 500
+MAX_ELECTRICITY = 10000
+MAX_FLIGHTS = 365
+
+
 def calculate_footprint(
     transport,
     distance,
@@ -5,11 +12,18 @@ def calculate_footprint(
     diet,
     flights
 ):
-    """
-    Returns:
-    total_footprint (kg CO₂/year),
-    contributors (dictionary)
-    """
+    if transport not in VALID_TRANSPORT:
+        raise ValueError(
+            f"Invalid transport '{transport}'. Must be one of: {', '.join(sorted(VALID_TRANSPORT))}"
+        )
+    if diet not in VALID_DIET:
+        raise ValueError(
+            f"Invalid diet '{diet}'. Must be one of: {', '.join(sorted(VALID_DIET))}"
+        )
+
+    distance = max(0.0, min(float(distance), MAX_DISTANCE))
+    electricity = max(0.0, min(float(electricity), MAX_ELECTRICITY))
+    flights = max(0, min(int(flights), MAX_FLIGHTS))
 
     contributors = {}
 
