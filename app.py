@@ -15,534 +15,552 @@ from recommendations import generate_recommendations
 # -------------------------
 # INIT
 # -------------------------
+
 init_db()
 
 st.set_page_config(
-    page_title="EcoBuddy 🌱",
+    page_title="EcoBuddy",
     page_icon="🌱",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 
 # -------------------------
-# ADVANCED STYLING
+# REFERENCE-INSPIRED ADVANCED STYLING
 # -------------------------
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --sky: #b9d7f4;
+        --sky-soft: #d9eafa;
+        --field: #5f8f36;
+        --leaf: #78a945;
+        --moss: #2f5e32;
+        --ink: #080b0a;
+        --muted: #66736a;
+        --paper: rgba(255, 255, 255, 0.76);
+        --paper-strong: rgba(255, 255, 255, 0.92);
+        --line: rgba(38, 64, 41, 0.12);
+        --shadow: 0 24px 70px rgba(38, 67, 44, 0.18);
+        --radius: 18px;
+    }
+
     * {
-        margin: 0;
-        padding: 0;
         box-sizing: border-box;
     }
-    
-    body {
-        background: linear-gradient(-45deg, #0a2818, #0f3d1f, #1a5c2a, #0d4a27);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-        min-height: 100vh;
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body,
+    [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif;
+        color: var(--ink);
+        background:
+            linear-gradient(180deg, rgba(185, 215, 244, 0.74) 0%, rgba(244, 248, 240, 0.95) 48%, #f7faf3 100%),
+            radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.86), transparent 30%),
+            linear-gradient(135deg, #d7ebff 0%, #f4f8e8 54%, #eaf5df 100%);
+        min-height: 100vh;
     }
-    
-    @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+
+    [data-testid="stHeader"] {
+        background: transparent;
     }
-    
-    /* TITLE AND HEADER ANIMATIONS */
+
+    .block-container {
+        max-width: 1280px;
+        padding: 24px 32px 56px;
+    }
+
+    [data-testid="stSidebar"] {
+        background: rgba(255, 255, 255, 0.74);
+        border-right: 1px solid var(--line);
+        box-shadow: 18px 0 48px rgba(44, 72, 47, 0.08);
+        backdrop-filter: blur(18px);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: var(--ink);
+    }
+
     .title {
-        font-size: 64px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #86efac 100%);
-        background-size: 200% 200%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 12px;
-        text-align: center;
-        letter-spacing: -1px;
-        animation: slideDown 0.8s cubic-bezier(0.23, 1, 0.320, 1), 
-                   shimmer 3s ease-in-out infinite;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    @keyframes shimmer {
-        0%, 100% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-    }
-    
-    .subtitle {
-        color: #e5e7eb;
-        margin-bottom: 28px;
-        text-align: center;
-        font-size: 18px;
-        font-weight: 400;
-        letter-spacing: 0.5px;
-        animation: fadeInUp 0.8s 0.2s cubic-bezier(0.23, 1, 0.320, 1) both;
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    /* METRIC CARDS - Enhanced with Animation */
-    .metric-card {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(74, 222, 128, 0.08) 100%);
-        padding: 28px;
-        border-radius: 20px;
-        border: 1.5px solid rgba(74, 222, 128, 0.35);
-        margin-bottom: 14px;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25), 
-                    inset 0 1px 2px rgba(255, 255, 255, 0.05);
-        transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
-        position: relative;
-        overflow: hidden;
-        backdrop-filter: blur(10px);
-        animation: popIn 0.6s cubic-bezier(0.23, 1, 0.320, 1);
-    }
-    
-    @keyframes popIn {
-        0% {
-            opacity: 0;
-            transform: scale(0.9) translateY(20px);
-        }
-        100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
-    }
-    
-    .metric-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    }
-    
-    .metric-card::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 100px;
-        height: 100px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-        transition: all 0.5s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-12px);
-        box-shadow: 0 24px 48px rgba(34, 197, 94, 0.35),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.1);
-        border-color: rgba(74, 222, 128, 0.7);
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(74, 222, 128, 0.12) 100%);
-    }
-    
-    .metric-card:hover::after {
-        right: -20%;
-        top: -20%;
-    }
-    
-    /* CARDS - Enhanced */
-    .card {
-        background: linear-gradient(135deg, rgba(31, 41, 55, 0.5) 0%, rgba(55, 65, 81, 0.3) 100%);
-        padding: 24px;
-        border-radius: 18px;
-        border: 1.5px solid rgba(74, 222, 128, 0.25);
-        margin-bottom: 16px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(12px);
-        transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
-        position: relative;
-        animation: slideInLeft 0.6s cubic-bezier(0.23, 1, 0.320, 1);
-    }
-    
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-    }
-    
-    .card:hover {
-        border-color: rgba(74, 222, 128, 0.5);
-        background: linear-gradient(135deg, rgba(31, 41, 55, 0.65) 0%, rgba(55, 65, 81, 0.45) 100%);
-        transform: translateY(-6px);
-        box-shadow: 0 16px 40px rgba(74, 222, 128, 0.2),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.08);
-    }
-    
-    /* HIGHLIGHT CARDS */
-    .card-highlight {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(74, 222, 128, 0.08) 100%);
-        padding: 28px;
-        border-radius: 20px;
-        border: 2px solid rgba(74, 222, 128, 0.45);
-        margin-bottom: 16px;
-        box-shadow: 0 12px 40px rgba(34, 197, 94, 0.2),
-                    inset 0 1px 3px rgba(255, 255, 255, 0.1);
-        position: relative;
-        backdrop-filter: blur(12px);
-        animation: fadeInScale 0.6s 0.2s cubic-bezier(0.23, 1, 0.320, 1) both;
-    }
-    
-    @keyframes fadeInScale {
-        from {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-    
-    .card-highlight::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.6), transparent);
-        animation: shimmerLine 2s ease-in-out infinite;
-    }
-    
-    @keyframes shimmerLine {
-        0%, 100% { opacity: 0.3; }
-        50% { opacity: 1; }
-    }
-    
-    /* BADGES - Enhanced */
-    .badge {
-        display: inline-block;
-        padding: 14px 32px;
-        border-radius: 50px;
+        margin: 8px 0 12px;
+        color: var(--ink);
+        font-size: clamp(46px, 6vw, 82px);
+        line-height: 1;
         font-weight: 800;
-        font-size: 17px;
-        background: linear-gradient(135deg, #22c55e, #4ade80);
-        color: #0a2818;
-        box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        letter-spacing: 0.5px;
-        animation: bounceIn 0.6s 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
+        letter-spacing: 0;
+        text-align: center;
+        animation: fadeUp 700ms ease both;
     }
-    
-    @keyframes bounceIn {
-        0% {
-            opacity: 0;
-            transform: scale(0.3);
-        }
-        50% {
-            opacity: 1;
-            transform: scale(1.05);
-        }
-        100% {
-            transform: scale(1);
-        }
+
+    .subtitle {
+        max-width: 720px;
+        margin: 0 auto 30px;
+        color: var(--muted);
+        font-size: 19px;
+        line-height: 1.6;
+        font-weight: 500;
+        text-align: center;
+        animation: fadeUp 800ms 80ms ease both;
     }
-    
-    .badge-champion {
-        background: linear-gradient(135deg, #f59e0b, #fbbf24);
-        color: #78350f;
-        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
-    }
-    
-    .badge-guardian {
-        background: linear-gradient(135deg, #22c55e, #4ade80);
-        color: #0a2818;
-        box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
-    }
-    
-    .badge-learner {
-        background: linear-gradient(135deg, #3b82f6, #60a5fa);
-        color: #082f49;
-        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
-    }
-    
-    .badge-high {
-        background: linear-gradient(135deg, #ef4444, #f87171);
-        color: #7c2d12;
-        box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
-    }
-    
-    /* INPUT SECTION */
-    .input-section {
-        background: linear-gradient(135deg, rgba(31, 41, 55, 0.4) 0%, rgba(55, 65, 81, 0.2) 100%);
-        padding: 36px;
-        border-radius: 22px;
-        border: 1.5px solid rgba(74, 222, 128, 0.25);
-        margin-bottom: 24px;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.03);
-        position: relative;
-        animation: slideInUp 0.8s 0.1s cubic-bezier(0.23, 1, 0.320, 1) both;
-    }
-    
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .input-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        border-radius: 22px 22px 0 0;
-    }
-    
-    /* SECTION HEADERS */
+
     .section-header {
-        font-size: 32px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-top: 36px;
-        margin-bottom: 24px;
-        letter-spacing: -0.5px;
-        position: relative;
-        animation: fadeInLeft 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+        margin: 38px 0 18px;
+        color: var(--ink);
+        font-size: clamp(28px, 3vw, 42px);
+        line-height: 1.08;
+        font-weight: 800;
+        letter-spacing: 0;
+        animation: fadeUp 650ms ease both;
     }
-    
-    @keyframes fadeInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
+
     .section-header::after {
         content: '';
         display: block;
-        width: 60px;
-        height: 3px;
-        background: linear-gradient(90deg, #22c55e, #4ade80);
-        margin-top: 12px;
-        border-radius: 2px;
-        animation: expandWidth 0.6s 0.2s cubic-bezier(0.23, 1, 0.320, 1) both;
+        width: 88px;
+        height: 4px;
+        margin-top: 14px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #030504, var(--leaf), rgba(120, 169, 69, 0));
     }
-    
-    @keyframes expandWidth {
-        from {
-            width: 0;
-        }
-        to {
-            width: 60px;
-        }
+
+    .input-section,
+    .card,
+    .card-highlight,
+    .metric-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(145deg, var(--paper-strong), rgba(255, 255, 255, 0.64));
+        box-shadow: 0 18px 50px rgba(57, 86, 47, 0.12);
+        backdrop-filter: blur(18px);
+        position: relative;
+        overflow: hidden;
+        animation: fadeUp 700ms ease both;
+        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
     }
-    
-    /* PROGRESS BAR */
+
+    .input-section {
+        padding: 34px;
+        margin-bottom: 24px;
+    }
+
+    .card,
+    .card-highlight,
+    .metric-card {
+        padding: 26px;
+        margin-bottom: 16px;
+    }
+
+    .metric-card::before,
+    .card-highlight::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 5px;
+        background: linear-gradient(90deg, #030504, var(--leaf), #b6d274);
+    }
+
+    .metric-card:hover,
+    .card:hover,
+    .card-highlight:hover {
+        transform: translateY(-6px);
+        border-color: rgba(95, 143, 54, 0.28);
+        box-shadow: 0 26px 64px rgba(57, 86, 47, 0.17);
+    }
+
+    .card-highlight {
+        background:
+            linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(232, 244, 216, 0.82)),
+            linear-gradient(135deg, rgba(120, 169, 69, 0.12), transparent);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 20px;
+        border-radius: 999px;
+        border: 1px solid rgba(8, 11, 10, 0.08);
+        background: #030504;
+        color: #fff;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .badge-champion {
+        background: linear-gradient(135deg, #f4c760, #d8831e);
+        color: #2c1804;
+    }
+
+    .badge-guardian {
+        background: linear-gradient(135deg, #acd66f, #5f8f36);
+        color: #0d1c0f;
+    }
+
+    .badge-learner {
+        background: linear-gradient(135deg, #b9d7f4, #6aa0cf);
+        color: #071927;
+    }
+
+    .badge-high {
+        background: linear-gradient(135deg, #ff8e70, #d84b35);
+        color: #2e0904;
+    }
+
     .progress-bar {
         width: 100%;
-        height: 14px;
-        background: rgba(74, 222, 128, 0.08);
-        border-radius: 12px;
+        height: 12px;
+        margin-top: 12px;
+        border-radius: 999px;
+        background: rgba(8, 11, 10, 0.08);
         overflow: hidden;
-        margin-top: 10px;
-        border: 1px solid rgba(74, 222, 128, 0.2);
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #22c55e, #4ade80, #86efac);
-        border-radius: 12px;
-        transition: width 0.8s cubic-bezier(0.23, 1, 0.320, 1);
-        box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
-        animation: fillPulse 2s ease-in-out infinite;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #030504, var(--moss), var(--leaf));
+        box-shadow: 0 0 20px rgba(95, 143, 54, 0.34);
+        transition: width 600ms ease;
     }
-    
-    @keyframes fillPulse {
-        0%, 100% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.5); }
-        50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
-    }
-    
-    /* SEPARATORS */
+
     hr {
-        border: none;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(74, 222, 128, 0.2), transparent);
         margin: 32px 0;
+        border: none;
+        background: linear-gradient(90deg, transparent, rgba(8, 11, 10, 0.16), transparent);
     }
-    
-    /* INPUT STYLING */
+
     .stTextInput > div > div > input,
-    .stNumberInput > div > div > input,
-    .stSelectbox > div > div > select {
-        background-color: rgba(31, 41, 55, 0.6) !important;
-        border: 1.5px solid rgba(74, 222, 128, 0.3) !important;
+    .stNumberInput input,
+    .stSelectbox [data-baseweb="select"],
+    .stTextArea textarea {
+        min-height: 48px;
+        border: 1px solid rgba(8, 11, 10, 0.12) !important;
         border-radius: 12px !important;
-        color: #e5e7eb !important;
-        padding: 12px 16px !important;
-        font-weight: 500;
-        transition: all 0.3s ease !important;
+        background: rgba(255, 255, 255, 0.88) !important;
+        color: var(--ink) !important;
+        box-shadow: 0 12px 30px rgba(57, 86, 47, 0.08);
     }
-    
+
     .stTextInput > div > div > input:focus,
-    .stNumberInput > div > div > input:focus,
-    .stSelectbox > div > div > select:focus {
-        border-color: rgba(74, 222, 128, 0.8) !important;
-        box-shadow: 0 0 12px rgba(34, 197, 94, 0.3) !important;
-        background-color: rgba(31, 41, 55, 0.8) !important;
+    .stNumberInput input:focus,
+    .stTextArea textarea:focus {
+        border-color: rgba(95, 143, 54, 0.55) !important;
+        box-shadow: 0 0 0 4px rgba(120, 169, 69, 0.14) !important;
     }
-    
-    .stInfo, .stWarning, .stSuccess {
+
+    .stButton > button {
+        min-height: 52px;
+        padding: 0 28px !important;
+        border: none !important;
+        border-radius: 12px !important;
+        background: #030504 !important;
+        color: #fff !important;
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2) !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0 !important;
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease !important;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        background: #101713 !important;
+        box-shadow: 0 22px 44px rgba(0, 0, 0, 0.26) !important;
+    }
+
+    .stInfo,
+    .stWarning,
+    .stSuccess,
+    .stError {
         border-radius: 14px !important;
-        border-left: 4px solid !important;
-        padding: 16px !important;
-        animation: slideInRight 0.5s cubic-bezier(0.23, 1, 0.320, 1);
+        border: 1px solid var(--line) !important;
+        box-shadow: 0 12px 30px rgba(57, 86, 47, 0.08);
     }
-    
-    @keyframes slideInRight {
+
+    .stInfo {
+        background: rgba(185, 215, 244, 0.42) !important;
+    }
+
+    .stWarning {
+        background: rgba(244, 199, 96, 0.24) !important;
+    }
+
+    .stSuccess {
+        background: rgba(172, 214, 111, 0.26) !important;
+    }
+
+    /* DARK PREMIUM THEME OVERRIDES */
+    :root {
+        --sky: #8ec5ff;
+        --sky-soft: #18273a;
+        --field: #4ade80;
+        --leaf: #58d27b;
+        --moss: #86efac;
+        --ink: #f8fafc;
+        --muted: #a7b3c6;
+        --paper: rgba(15, 23, 42, 0.76);
+        --paper-strong: rgba(12, 18, 32, 0.92);
+        --line: rgba(148, 163, 184, 0.18);
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+        --radius: 18px;
+    }
+
+    body,
+    [data-testid="stAppViewContainer"] {
+        color: var(--ink);
+        background:
+            radial-gradient(circle at 18% 8%, rgba(74, 222, 128, 0.22), transparent 28%),
+            radial-gradient(circle at 84% 12%, rgba(96, 165, 250, 0.18), transparent 30%),
+            linear-gradient(145deg, #030712 0%, #07130d 42%, #111827 100%) !important;
+    }
+
+    .block-container {
+        padding-top: 28px;
+    }
+
+    [data-testid="stSidebar"] {
+        background: rgba(3, 7, 18, 0.84);
+        border-right: 1px solid var(--line);
+        box-shadow: 18px 0 48px rgba(0, 0, 0, 0.26);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: var(--ink);
+    }
+
+    .title {
+        color: var(--ink);
+        text-shadow: 0 18px 48px rgba(74, 222, 128, 0.18);
+    }
+
+    .subtitle,
+    .section-header {
+        color: var(--ink);
+    }
+
+    .subtitle {
+        color: var(--muted);
+    }
+
+    .input-section,
+    .card,
+    .card-highlight,
+    .metric-card {
+        background:
+            linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.72)),
+            linear-gradient(135deg, rgba(74, 222, 128, 0.08), transparent);
+        border-color: var(--line);
+        box-shadow: var(--shadow);
+    }
+
+    .card-highlight {
+        background:
+            linear-gradient(145deg, rgba(13, 36, 25, 0.92), rgba(12, 18, 32, 0.84)),
+            linear-gradient(135deg, rgba(74, 222, 128, 0.14), transparent);
+    }
+
+    .metric-card::before,
+    .card-highlight::before,
+    .section-header::after {
+        background: linear-gradient(90deg, #4ade80, #86efac, rgba(96, 165, 250, 0));
+    }
+
+    .progress-bar {
+        background: rgba(148, 163, 184, 0.14);
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #16a34a, #4ade80, #86efac);
+    }
+
+    .stTextInput > div > div > input,
+    .stNumberInput input,
+    .stSelectbox [data-baseweb="select"],
+    .stTextArea textarea {
+        background: #ffffff !important;
+        border-color: rgba(148, 163, 184, 0.2) !important;
+        color: #05070a !important;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+    }
+
+    .stTextInput label,
+    .stNumberInput label,
+    .stSelectbox label,
+    [data-testid="stWidgetLabel"],
+    [data-testid="stWidgetLabel"] p {
+        color: #ffffff !important;
+        opacity: 1 !important;
+        font-weight: 800 !important;
+    }
+
+    .stSelectbox [data-baseweb="select"] *,
+    .stNumberInput input,
+    .stTextInput input,
+    .stTextArea textarea {
+        color: #05070a !important;
+        -webkit-text-fill-color: #05070a !important;
+    }
+
+    .stButton > button {
+        background: linear-gradient(135deg, #0b0f18, #111827) !important;
+        border: 1px solid rgba(134, 239, 172, 0.28) !important;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32) !important;
+    }
+
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #111827, #0f2a1a) !important;
+        border-color: rgba(134, 239, 172, 0.55) !important;
+    }
+
+    .stInfo,
+    .stWarning,
+    .stSuccess,
+    .stError {
+        color: var(--ink) !important;
+        background: rgba(15, 23, 42, 0.78) !important;
+        border-color: var(--line) !important;
+    }
+
+    [style*="#d1d5db"],
+    [style*="#9ca3af"],
+    [style*="rgb(209, 213, 219)"],
+    [style*="rgb(156, 163, 175)"] {
+        color: var(--muted) !important;
+    }
+
+    [style*="#4ade80"],
+    [style*="rgb(74, 222, 128)"] {
+        color: var(--moss) !important;
+    }
+
+    [data-testid="stDataFrame"] {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        background: #0f172a !important;
+    }
+
+    [data-testid="stDataFrame"] > div,
+    [data-testid="stDataFrame"] iframe,
+    [data-testid="stDataFrame"] [class*="stDataFrame"],
+    [data-testid="stDataFrame"] [class*="dataframe"],
+    [data-testid="stDataFrame"] [class*="glide"],
+    [data-testid="stDataFrame"] [class*="table"] {
+        background: #0f172a !important;
+        color: #ffffff !important;
+    }
+
+    [data-testid="stDataFrame"] canvas {
+        background: #0f172a !important;
+    }
+
+    [data-testid="stDataFrame"] button,
+    [data-testid="stDataFrame"] [role="button"] {
+        background: #111827 !important;
+        color: #ffffff !important;
+        border-color: rgba(134, 239, 172, 0.22) !important;
+    }
+
+    [data-testid="stDataFrame"] svg {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+    }
+
+    [data-testid="stDataFrame"] [role="grid"],
+    [data-testid="stDataFrame"] [role="row"],
+    [data-testid="stDataFrame"] [role="columnheader"],
+    [data-testid="stDataFrame"] [role="gridcell"] {
+        background-color: #0f172a !important;
+        color: #ffffff !important;
+        border-color: rgba(148, 163, 184, 0.16) !important;
+    }
+
+    [data-testid="stDataFrame"] [role="columnheader"] {
+        background-color: #07130d !important;
+        color: #ffffff !important;
+        font-weight: 800 !important;
+    }
+
+    .history-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid rgba(134, 239, 172, 0.24);
+        border-radius: 16px;
+        background: #0f172a;
+        box-shadow: var(--shadow);
+    }
+
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #0f172a;
+        color: #ffffff;
+        font-size: 15px;
+    }
+
+    .history-table thead th {
+        padding: 16px 18px;
+        background: #07130d;
+        color: #ffffff !important;
+        border-bottom: 1px solid rgba(134, 239, 172, 0.3);
+        font-weight: 800;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .history-table tbody td {
+        padding: 15px 18px;
+        color: #ffffff !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        text-align: left;
+    }
+
+    .history-table tbody tr:nth-child(odd) {
+        background: #0f172a;
+    }
+
+    .history-table tbody tr:nth-child(even) {
+        background: #111827;
+    }
+
+    .history-table tbody tr:hover {
+        background: rgba(34, 197, 94, 0.14);
+    }
+
+    @keyframes fadeUp {
         from {
             opacity: 0;
-            transform: translateX(20px);
+            transform: translateY(18px);
         }
         to {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateY(0);
         }
     }
-    
-    .stInfo {
-        background-color: rgba(59, 130, 246, 0.1) !important;
-        border-left-color: #3b82f6 !important;
-    }
-    
-    .stWarning {
-        background-color: rgba(245, 158, 11, 0.1) !important;
-        border-left-color: #f59e0b !important;
-    }
-    
-    .stSuccess {
-        background-color: rgba(34, 197, 94, 0.1) !important;
-        border-left-color: #22c55e !important;
-    }
-    
-    /* BUTTON STYLING */
-    .stButton > button {
-        background: linear-gradient(135deg, #22c55e, #4ade80) !important;
-        color: #0a2818 !important;
-        font-weight: 800 !important;
-        font-size: 16px !important;
-        padding: 14px 32px !important;
-        border: none !important;
-        border-radius: 12px !important;
-        box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3) !important;
-        transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1) !important;
-        letter-spacing: 0.5px !important;
-        animation: slideInUp 0.6s 0.4s cubic-bezier(0.23, 1, 0.320, 1) both;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stButton > button::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s;
-    }
-    
-    .stButton > button:hover::before {
-        width: 300px;
-        height: 300px;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-4px) !important;
-        box-shadow: 0 16px 40px rgba(34, 197, 94, 0.5) !important;
-    }
-    
-    .stButton > button:active {
-        transform: translateY(-2px) !important;
-    }
-    
-    /* FLOATING ANIMATION */
-    @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-    }
-    
-    .floating {
-        animation: float 3s ease-in-out infinite;
-    }
-    
-    /* GLOW ANIMATION */
-    @keyframes glow {
-        0%, 100% {
-            box-shadow: 0 0 5px rgba(34, 197, 94, 0.3), inset 0 0 5px rgba(34, 197, 94, 0.1);
+
+    @media (max-width: 760px) {
+        .block-container {
+            padding: 16px 14px 42px;
         }
-        50% {
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.6), inset 0 0 10px rgba(34, 197, 94, 0.2);
+
+        .input-section,
+        .card,
+        .card-highlight,
+        .metric-card {
+            padding: 22px;
         }
     }
-    
-    /* STAGGER ANIMATION DELAYS */
-    .stagger-1 { animation-delay: 0.1s !important; }
-    .stagger-2 { animation-delay: 0.2s !important; }
-    .stagger-3 { animation-delay: 0.3s !important; }
-    .stagger-4 { animation-delay: 0.4s !important; }
-    .stagger-5 { animation-delay: 0.5s !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -567,8 +585,6 @@ st.markdown("---")
 # INPUTS SECTION
 # -------------------------
 st.markdown("<div class='section-header'>📝 Your Lifestyle Profile</div>", unsafe_allow_html=True)
-
-st.markdown("<div class='input-section'>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns(3)
 
@@ -601,8 +617,6 @@ with col3:
     """, unsafe_allow_html=True)
     flights = st.number_input("Annual Flights", min_value=0, value=0, step=1)
     st.info("💡 How many long-distance flights per year?")
-
-st.markdown("</div>", unsafe_allow_html=True)
 
 
 # -------------------------
@@ -1044,8 +1058,13 @@ if history:
     display_df = df[["date", "transport", "electricity", "footprint", "eco_score"]].copy()
     display_df.columns = ["📅 Date", "🚗 Transport", "⚡ Electricity (kWh)", "🌍 Footprint (kg CO₂)", "🏆 Score"]
     display_df = display_df.iloc[::-1].reset_index(drop=True)
-    
-    st.dataframe(display_df)
+
+    st.markdown(
+        "<div class='history-table-wrap'>"
+        + display_df.to_html(index=False, classes="history-table", border=0)
+        + "</div>",
+        unsafe_allow_html=True
+    )
 
     st.markdown("---")
 
