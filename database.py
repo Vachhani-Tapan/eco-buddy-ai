@@ -4,25 +4,30 @@ DB_NAME = "eco_buddy.db"
 
 
 def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS assessments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            transport TEXT,
-            distance REAL,
-            electricity REAL,
-            diet TEXT,
-            flights INTEGER,
-            footprint REAL,
-            eco_score INTEGER
-        )
-    """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS assessments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                transport TEXT,
+                distance REAL,
+                electricity REAL,
+                diet TEXT,
+                flights INTEGER,
+                footprint REAL,
+                eco_score INTEGER
+            )
+        """)
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.Error as e:
+        print(f"Database init error: {e}")
+        return False
 
 
 def save_assessment(
@@ -34,11 +39,22 @@ def save_assessment(
     footprint,
     eco_score
 ):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO assessments (
+        cursor.execute("""
+            INSERT INTO assessments (
+                transport,
+                distance,
+                electricity,
+                diet,
+                flights,
+                footprint,
+                eco_score
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
             transport,
             distance,
             electricity,
@@ -46,33 +62,31 @@ def save_assessment(
             flights,
             footprint,
             eco_score
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        transport,
-        distance,
-        electricity,
-        diet,
-        flights,
-        footprint,
-        eco_score
-    ))
+        ))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.Error as e:
+        print(f"Database save error: {e}")
+        return False
 
 
 def get_assessments():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT *
-        FROM assessments
-        ORDER BY date DESC
-    """)
+        cursor.execute("""
+            SELECT *
+            FROM assessments
+            ORDER BY date DESC
+        """)
 
-    data = cursor.fetchall()
+        data = cursor.fetchall()
 
-    conn.close()
-    return data
+        conn.close()
+        return data
+    except sqlite3.Error as e:
+        print(f"Database read error: {e}")
+        return []
