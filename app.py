@@ -1,4 +1,5 @@
 import html
+import time
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -653,14 +654,32 @@ def generate_pdf(total, eco_score, insight):
 # -------------------------
 col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
 with col_btn2:
+    st.caption("✔ All input fields are validated before analysis.")
     analyze_btn = st.button("🌿 Analyze My Impact", use_container_width=True)
 
 if analyze_btn:
 
     with st.spinner("🌍 Analyzing your carbon footprint..."):
+
+        progress_text = st.empty()
+        progress = st.progress(0)
+
+        progress_text.info("🔍 Validating user inputs...")
+        progress.progress(20)
+        time.sleep(0.5)  # Simulate validation delay
+
+        progress_text.info("🌍 Calculating carbon footprint...")
+        progress.progress(40)
+
         total, contributors = calculate_footprint(
             transport, distance, electricity, diet, flights
         )
+
+        progress_text.info("📊 Calculation completed...")
+        progress.progress(100)
+
+        progress.empty()
+        progress_text.empty()
 
     eco_score = calculate_eco_score(total)
 
