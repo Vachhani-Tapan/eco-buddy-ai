@@ -285,7 +285,11 @@ st.markdown("""
     }
 
     .stButton > button,
+ fix/download-report-button-visibility
+    .stDownloadButton > button {
+
     [data-testid="stFormSubmitButton"] > button {
+ main
         min-height: 52px;
         padding: 0 28px !important;
         border: none !important;
@@ -300,7 +304,11 @@ st.markdown("""
     }
 
     .stButton > button:hover,
+ fix/download-report-button-visibility
+    .stDownloadButton > button:hover {
+
     [data-testid="stFormSubmitButton"] > button:hover {
+ main
         transform: translateY(-2px);
         background: #101713 !important;
         box-shadow: 0 22px 44px rgba(0, 0, 0, 0.26) !important;
@@ -440,14 +448,25 @@ st.markdown("""
     }
 
     .stButton > button,
+ fix/download-report-button-visibility
+    .stDownloadButton > button {
+
     [data-testid="stFormSubmitButton"] > button {
+main
         background: linear-gradient(135deg, #0b0f18, #111827) !important;
+        color: #ffffff !important;
         border: 1px solid rgba(134, 239, 172, 0.28) !important;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32) !important;
     }
+ fix/download-report-button-visibility
+            
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
+
 
     .stButton > button:hover,
     [data-testid="stFormSubmitButton"] > button:hover {
+ main
         background: linear-gradient(135deg, #111827, #0f2a1a) !important;
         border-color: rgba(134, 239, 172, 0.55) !important;
     }
