@@ -8,7 +8,8 @@ import plotly.express as px
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 
-from database import init_db, save_assessment, get_assessments
+from database import init_db, save_assessment, get_assessments, init_gamification_db
+import gamification as gf
 from emissions import calculate_footprint, calculate_eco_score
 from recommendations import generate_recommendations
 
@@ -22,6 +23,7 @@ def h(text):
 # -------------------------
 
 init_db()
+init_gamification_db()
 
 st.set_page_config(
     page_title="EcoBuddy",
@@ -566,6 +568,49 @@ st.markdown("""
             padding: 22px;
         }
     }
+
+    button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
+        color: #d1d5db !important;
+        font-weight: 600 !important;
+    }
+    
+    button[data-baseweb="tab"][aria-selected="true"] > div[data-testid="stMarkdownContainer"] > p {
+        color: #4ade80 !important;
+        font-weight: 800 !important;
+    }
+    
+    [data-testid="stExpander"] {
+        background: #0f172a !important;
+        border: 1px solid rgba(134, 239, 172, 0.28) !important;
+        border-radius: 8px !important;
+        overflow: hidden;
+    }
+    
+    [data-testid="stExpander"] details {
+        background: #0f172a !important;
+    }
+
+    [data-testid="stExpander"] summary {
+        background-color: #0f172a !important;
+    }
+    
+    [data-testid="stExpander"] summary:hover {
+        background-color: #1e293b !important;
+    }
+
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary p,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] summary svg {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        fill: #ffffff !important;
+    }
+    
+    [data-testid="stExpanderDetails"] {
+        background-color: #0f172a !important;
+        color: #d1d5db !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -593,7 +638,7 @@ st.markdown("---")
 # -------------------------
 # TABS CONFIGURATION
 # -------------------------
-tab1, tab2 = st.tabs(["🌍 Carbon Footprint", "⚡ Home Energy Audit"])
+tab1, tab2, tab3 = st.tabs(["🌍 Carbon Footprint", "⚡ Home Energy Audit", "🎮 Gamification"])
 
 with tab1:
     st.markdown("<div class='section-header'>📝 Your Lifestyle Profile</div>", unsafe_allow_html=True)
@@ -1279,3 +1324,66 @@ with tab2:
     </div>
     """, unsafe_allow_html=True)
 
+with tab3:
+    st.markdown("<div class='section-header'>🎮 Your Eco Journey</div>", unsafe_allow_html=True)
+    
+    # Header: Level, XP, Streak
+    total_xp = gf.get_total_xp(1)
+    level = gf.calculate_level(total_xp)
+    progress = gf.calculate_level_progress(total_xp)
+    streak = gf.calculate_streak(1, [])
+    
+    g_col1, g_col2, g_col3 = st.columns(3)
+    g_col1.metric("Current Level", f"Lvl {level}")
+    g_col2.metric("Total XP", f"{total_xp} XP")
+    g_col3.metric("Current Streak", f"{streak} Days 🔥")
+    
+    st.progress(progress, text=f"Progress to Level {level+1}")
+    
+    st.markdown("---")
+    st.markdown("### 🏆 Weekly Challenges")
+    
+    user_challenges = gf.get_user_challenges(1)
+    enrolled_ids = [c['challenge_id'] for c in user_challenges if c['status'] != 'expired']
+    
+    for ch_id, ch_data in gf.CHALLENGES.items():
+        with st.expander(f"{ch_data['title']} ({ch_data['xp']} XP) - {ch_data['category']}"):
+            st.write(f"Target: {ch_data['target']} {ch_data['unit']}")
+            if ch_id in enrolled_ids:
+                status = [c['status'] for c in user_challenges if c['challenge_id'] == ch_id][-1]
+                if status == 'completed':
+                    st.success("Challenge Completed! 🎉")
+                else:
+                    current_prog = [c['progress_value'] for c in user_challenges if c['challenge_id'] == ch_id][-1]
+                    st.write(f"Progress: {current_prog} / {ch_data['target']}")
+                    
+                    prog_val = st.number_input(f"Update Progress for {ch_id}", min_value=0.0, step=1.0, key=f"prog_{ch_id}")
+                    if st.button("Update", key=f"btn_prog_{ch_id}"):
+                        gf.update_challenge_progress(1, ch_id, progress_increment=prog_val)
+                        gf.validate_challenge_progress(1, ch_id)
+                        st.rerun()
+            else:
+                if st.button("Enroll", key=f"enroll_{ch_id}"):
+                    gf.enroll_challenge(1, ch_id)
+                    st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🎖️ Achievement Badges")
+    
+    unlocked = gf.get_unlocked_badges(1)
+    unlocked_ids = [b['badge_id'] for b in unlocked]
+    
+    cols = st.columns(len(gf.BADGES))
+    for i, (b_id, b_data) in enumerate(gf.BADGES.items()):
+        with cols[i % len(cols)]:
+            if b_id in unlocked_ids:
+                st.markdown(f"**✅ {b_data['name']}**")
+                st.caption(b_data['desc'])
+                if st.button("Share Card", key=f"share_{b_id}"):
+                    file_path = gf.generate_achievement_card(1, b_id, f"badge_{b_id}.png")
+                    if file_path:
+                        with open(file_path, "rb") as f:
+                            st.download_button("Download Card", f, file_name=f"badge_{b_id}.png", key=f"dl_{b_id}")
+            else:
+                st.markdown(f"**🔒 {b_data['name']}**")
+                st.caption(b_data['desc'])
