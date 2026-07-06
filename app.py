@@ -4,6 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.express as px
+import tempfile
+import uuid
+import os
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
@@ -699,7 +702,7 @@ with tab1:
     # -------------------------
     def generate_pdf(total, eco_score, insight):
         try:
-            file_name = "eco_report.pdf"
+            file_name = os.path.join(tempfile.gettempdir(), f"eco_report_{uuid.uuid4().hex}.pdf")
             doc = SimpleDocTemplate(file_name)
             styles = getSampleStyleSheet()
 
@@ -998,11 +1001,18 @@ with tab1:
 
         if report:
             with open(report, "rb") as f:
-                st.download_button(
-                    "📄 Download Eco Report (PDF)",
-                    f,
-                    file_name="EcoBuddy_Report.pdf"
-                )
+                pdf_bytes = f.read()
+                
+            try:
+                os.remove(report)
+            except OSError:
+                pass
+                
+            st.download_button(
+                "📄 Download Eco Report (PDF)",
+                pdf_bytes,
+                file_name="EcoBuddy_Report.pdf"
+            )
 
 
     # -------------------------
