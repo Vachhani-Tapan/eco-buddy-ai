@@ -17,6 +17,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from database import init_db, save_assessment, get_assessments, init_gamification_db
 import gamification as gf
 from emissions import calculate_footprint, calculate_eco_score
+from llm_parser import parse_quick_log
 
 from recommendations import generate_recommendations
 from ocr_utils import extract_text_from_file, parse_energy_consumption
@@ -439,8 +440,8 @@ st.markdown("""
     .stNumberInput input,
     .stSelectbox [data-baseweb="select"],
     .stTextArea textarea {
-        background: #ffffff !important;
-        border-color: rgba(148, 163, 184, 0.2) !important;
+        background: #e6f5e9 !important;
+        border-color: rgba(74, 222, 128, 0.4) !important;
         color: #05070a !important;
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
     }
@@ -679,109 +680,52 @@ st.markdown("---")
 
 
 # -------------------------
-# INPUTS SECTION
-# -------------------------
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("""
-    <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
-        <span style='font-size: 24px;'>🚗</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Transportation</span>
-    </div>
-    """, unsafe_allow_html=True)
-    transport = st.selectbox(
-        "Primary Transport",
-        ["Car", "Public Transport", "Bike", "Walking"],
-        key="transport"
-    )
-    distance = st.number_input(
-        "Daily Distance (km)",
-        min_value=0.0,
-        value=10.0,
-        step=1.0,
-        key="distance"
-    )
-
-with col2:
-    st.markdown("""
-    <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
-        <span style='font-size: 24px;'>⚡</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Energy & Diet</span>
-    </div>
-    """, unsafe_allow_html=True)
-    electricity = st.number_input(
-        "Monthly Electricity (kWh)",
-        min_value=0.0,
-        value=200.0,
-        step=10.0,
-        key="electricity"
-    )
-    diet = st.selectbox(
-        "Diet Type",
-        ["Vegetarian", "Non-Vegetarian"],
-        key="diet"
-    )
-with col3:
-    st.markdown("""
-    <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
-        <span style='font-size: 24px;'>✈️</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Travel</span>
-    </div>
-    """, unsafe_allow_html=True)
-    flights = st.number_input(
-        "Annual Flights",
-        min_value=0,
-        value=0,
-        step=1,
-        key="flights"
-    )
-    st.info("💡 How many long-distance flights per year?")
-
-
-# -------------------------
-# PDF REPORT GENERATION
-
-# -------------------------
 # TABS CONFIGURATION
 # -------------------------
-col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
-
-with col_btn1:
-    reset_btn = st.button(
-        "🔄 Reset Assessment",
-        use_container_width=True
-    )
-
-with col_btn2:
-    analyze_btn = st.button(
-        "🌿 Analyze My Impact",
-        use_container_width=True
-    )
-
-
-if reset_btn:
-
-    for key in DEFAULT_VALUES:
-        if key in st.session_state:
-            del st.session_state[key]
-
-    st.success("✅ Assessment form has been reset.")
-    st.rerun()
-
-    st.caption("✔ All input fields are validated before analysis.")
-    analyze_btn = st.button("🌿 Analyze My Impact", use_container_width=True)
 tab1, tab2, tab3, tab4 = st.tabs(["🌍 Carbon Footprint", "⚡ Home Energy Audit", "🎮 Gamification", "🗺️ Route Planning & Offsets"])
 
 with tab1:
     st.markdown("<div class='section-header'>📝 Your Lifestyle Profile</div>", unsafe_allow_html=True)
     
-    
-    
     st.markdown("### Region Setting")
     region = st.selectbox("Select Your Region for API Emissions Factor", ["Global", "US", "UK", "EU"])
-    st.markdown("---")
+
+    # -------------------------
+    # QUICK LOG (AI)
+    # -------------------------
+    st.markdown("### 🤖 AI Quick Log")
+    col_ai_input, col_ai_btn = st.columns([4, 1], vertical_alignment="bottom")
+    with col_ai_input:
+        quick_log_text = st.text_area("Let AI auto-fill your profile! Describe your day naturally.", placeholder="e.g., 'I drove 15 miles in my SUV and had a beef steak'", key="quick_log_input", height=68)
+    with col_ai_btn:
+        parse_btn = st.button("✨ Parse with AI", use_container_width=True)
+        
+    if parse_btn:
+        if quick_log_text.strip():
+            with st.spinner("Analyzing text..."):
+                parsed_data = parse_quick_log(quick_log_text)
+                if parsed_data:
+                    st.session_state.temp_parsed = parsed_data
+                else:
+                    st.error("Could not parse the text. Please try again.")
+        else:
+            st.warning("Please enter some text first.")
+
+    if "temp_parsed" in st.session_state:
+        tp = st.session_state.temp_parsed
+        st.info(f"**We found:** {tp.get('distance', 10.0)} km by {tp.get('transport', 'Car')}, and {tp.get('diet', 'Vegetarian')} diet. Is this correct?")
+        c_yes, c_no = st.columns(2)
+        with c_yes:
+            if st.button("✅ Yes, use this", key="confirm_yes"):
+                st.session_state.transport = tp.get('transport', 'Car')
+                st.session_state.distance = float(tp.get('distance', 10.0))
+                st.session_state.diet = tp.get('diet', 'Vegetarian')
+                del st.session_state.temp_parsed
+                st.rerun()
+        with c_no:
+            if st.button("❌ No, cancel", key="confirm_no"):
+                del st.session_state.temp_parsed
+                st.rerun()
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -856,8 +800,17 @@ with tab1:
     # CALCULATE & ANALYZE
     # -------------------------
     col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
+    with col_btn1:
+        reset_btn = st.button("🔄 Reset Assessment", use_container_width=True)
+        if reset_btn:
+            for key in DEFAULT_VALUES:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.success("✅ Assessment form has been reset.")
+            st.rerun()
+
     with col_btn2:
-        analyze_btn = st.button("🌿 Analyze My Impact", width="stretch")
+        analyze_btn = st.button("🌿 Analyze My Impact", use_container_width=True, key="analyze_impact_btn_2")
 
     if analyze_btn:
 
