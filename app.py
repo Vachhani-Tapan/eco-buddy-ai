@@ -19,6 +19,7 @@ import gamification as gf
 from emissions import calculate_footprint, calculate_eco_score
 
 from recommendations import generate_recommendations
+from ocr_utils import extract_text_from_file, parse_energy_consumption
 
 # Added for Route Planning & Offsets
 from database import (
@@ -45,6 +46,9 @@ def h(text):
 init_db()
 init_gamification_db()
 init_marketplace_db()
+
+if 'extracted_kwh' not in st.session_state:
+    st.session_state.extracted_kwh = 200.0
 
 
 st.set_page_config(
@@ -710,7 +714,20 @@ with tab1:
             <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Energy & Diet</span>
         </div>
         """, unsafe_allow_html=True)
-        electricity = st.number_input("Monthly Electricity (kWh)", min_value=0.0, value=200.0, step=10.0)
+        uploaded_bill = st.file_uploader("Upload Utility Bill (PDF/Image)", type=["pdf", "png", "jpg", "jpeg"])
+        if uploaded_bill is not None:
+            # We use a button to trigger extraction so it doesn't re-run infinitely on every interaction
+            if st.button("Extract Energy Usage"):
+                with st.spinner("Extracting data from bill..."):
+                    extracted_text = extract_text_from_file(uploaded_bill)
+                    parsed_val = parse_energy_consumption(extracted_text)
+                    if parsed_val is not None:
+                        st.session_state.extracted_kwh = float(parsed_val)
+                        st.success(f"Extracted {parsed_val} kWh from bill!")
+                    else:
+                        st.warning("Could not extract energy consumption. Please enter manually.")
+
+        electricity = st.number_input("Monthly Electricity (kWh)", min_value=0.0, value=float(st.session_state.extracted_kwh), step=10.0)
         diet = st.selectbox("Diet Type", ["Vegetarian", "Non-Vegetarian"])
 
     with col3:
