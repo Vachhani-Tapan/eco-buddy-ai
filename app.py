@@ -670,7 +670,7 @@ st.markdown("<div class='subtitle'>Your Personal AI-Powered Carbon Footprint Tra
 st.markdown("""
 <div style='text-align: center; margin-bottom: 32px;'>
     <div style='display: inline-flex; gap: 16px; padding: 12px 24px; background: rgba(34, 197, 94, 0.08); border-radius: 50px; border: 1px solid rgba(74, 222, 128, 0.2);'>
-        <span style='color: #d1d5db; font-size: 13px; font-weight: 600;'>✨ Track • 📊 Analyze • 💡 Improve</span>
+        <span style='color: #000; font-size: 15px; font-weight: 700;'>✨ Track • 📊 Analyze • 💡 Improve</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -688,7 +688,7 @@ with col1:
     st.markdown("""
     <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
         <span style='font-size: 24px;'>🚗</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Transportation</span>
+        <span style='font-size: 18px; font-weight: 700; color: #000;'>Transportation</span>
     </div>
     """, unsafe_allow_html=True)
     transport = st.selectbox(
@@ -708,7 +708,7 @@ with col2:
     st.markdown("""
     <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
         <span style='font-size: 24px;'>⚡</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Energy & Diet</span>
+        <span style='font-size: 18px; font-weight: 700; color: #000;'>Energy & Diet</span>
     </div>
     """, unsafe_allow_html=True)
     electricity = st.number_input(
@@ -727,7 +727,7 @@ with col3:
     st.markdown("""
     <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
         <span style='font-size: 24px;'>✈️</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Travel</span>
+        <span style='font-size: 18px; font-weight: 700; color: #000;'>Travel</span>
     </div>
     """, unsafe_allow_html=True)
     flights = st.number_input(
@@ -755,14 +755,13 @@ with col_btn1:
     )
 
 with col_btn2:
+    st.caption("✔ All input fields are validated before analysis.")
     analyze_btn = st.button(
         "🌿 Analyze My Impact",
         use_container_width=True
     )
 
-
 if reset_btn:
-
     for key in DEFAULT_VALUES:
         if key in st.session_state:
             del st.session_state[key]
@@ -772,6 +771,66 @@ if reset_btn:
 
     st.caption("✔ All input fields are validated before analysis.")
     analyze_btn = st.button("🌿 Analyze My Impact", use_container_width=True)
+
+
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🌍 Carbon Footprint",
+    "⚡ Home Energy Audit",
+    "🎮 Gamification",
+    "🗺️ Route Planning & Offsets"
+])
+
+with tab1:
+    st.markdown(
+        "<div class='section-header'>📝 Your Lifestyle Profile</div>",
+        unsafe_allow_html=True
+    )
+
+    if analyze_btn:
+        with st.spinner("🌍 Analyzing your carbon footprint..."):
+
+            progress_text = st.empty()
+            progress = st.progress(0)
+
+            progress_text.info("🔍 Validating user inputs...")
+            progress.progress(20)
+            time.sleep(0.5)
+
+            progress_text.info("🌍 Calculating carbon footprint...")
+            progress.progress(40)
+
+            total, contributors = calculate_footprint(
+                transport, distance, electricity, diet, flights
+            )
+
+            progress_text.info("📊 Calculation completed...")
+            progress.progress(100)
+
+            progress.empty()
+            progress_text.empty()
+
+        eco_score = calculate_eco_score(total)
+
+        insight, recommendations = generate_recommendations(
+            transport, electricity, diet, flights, contributors
+        )
+
+        save_assessment(
+            transport, distance, electricity, diet, flights,
+            total, eco_score
+        )
+
+        st.success("✅ Analysis completed!")
+
+        st.markdown("---")
+    # -------------------------
+    # RESULTS DASHBOARD
+    # -------------------------
+    st.markdown("<div class='section-header'>📊 Your Carbon Footprint Analysis</div>", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+
+
 tab1, tab2, tab3, tab4 = st.tabs(["🌍 Carbon Footprint", "⚡ Home Energy Audit", "🎮 Gamification", "🗺️ Route Planning & Offsets"])
 
 with tab1:
@@ -788,7 +847,7 @@ with tab1:
         st.markdown("""
         <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>🚗</span>
-            <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Transportation</span>
+            <span style='font-size: 18px; font-weight: 700; color: #000;'>Transportation</span>
         </div>
         """, unsafe_allow_html=True)
         transport = st.selectbox("Primary Transport", ["Car", "Public Transport", "Bike", "Walking"])
@@ -798,7 +857,7 @@ with tab1:
         st.markdown("""
         <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>⚡</span>
-            <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Energy & Diet</span>
+            <span style='font-size: 18px; font-weight: 700; color: #000;'>Energy & Diet</span>
         </div>
         """, unsafe_allow_html=True)
         uploaded_bill = st.file_uploader("Upload Utility Bill (PDF/Image)", type=["pdf", "png", "jpg", "jpeg"])
@@ -821,7 +880,7 @@ with tab1:
         st.markdown("""
         <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>✈️</span>
-            <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Travel</span>
+            <span style='font-size: 18px; font-weight: 700; color: #000;'>Travel</span>
         </div>
         """, unsafe_allow_html=True)
         flights = st.number_input("Annual Flights", min_value=0, value=0, step=1)
@@ -857,7 +916,7 @@ with tab1:
     # -------------------------
     col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
     with col_btn2:
-        analyze_btn = st.button("🌿 Analyze My Impact", width="stretch")
+        analyze_btn = st.button("🌿 Analyze My Impact")
 
     if analyze_btn:
 
