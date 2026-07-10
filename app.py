@@ -19,6 +19,7 @@ import gamification as gf
 from emissions import calculate_footprint, calculate_eco_score
 
 from recommendations import generate_recommendations
+from ocr_utils import extract_text_from_file, parse_energy_consumption
 
 # Added for Route Planning & Offsets
 from database import (
@@ -45,6 +46,9 @@ def h(text):
 init_db()
 init_gamification_db()
 init_marketplace_db()
+
+if 'extracted_kwh' not in st.session_state:
+    st.session_state.extracted_kwh = 200.0
 
 
 # -------------------------
@@ -666,7 +670,7 @@ st.markdown("<div class='subtitle'>Your Personal AI-Powered Carbon Footprint Tra
 st.markdown("""
 <div style='text-align: center; margin-bottom: 32px;'>
     <div style='display: inline-flex; gap: 16px; padding: 12px 24px; background: rgba(34, 197, 94, 0.08); border-radius: 50px; border: 1px solid rgba(74, 222, 128, 0.2);'>
-        <span style='color: #d1d5db; font-size: 13px; font-weight: 600;'>✨ Track • 📊 Analyze • 💡 Improve</span>
+        <span style='color: #000; font-size: 15px; font-weight: 700;'>✨ Track • 📊 Analyze • 💡 Improve</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -684,7 +688,7 @@ with col1:
     st.markdown("""
     <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
         <span style='font-size: 24px;'>🚗</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Transportation</span>
+        <span style='font-size: 18px; font-weight: 700; color: #000;'>Transportation</span>
     </div>
     """, unsafe_allow_html=True)
     transport = st.selectbox(
@@ -704,7 +708,7 @@ with col2:
     st.markdown("""
     <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
         <span style='font-size: 24px;'>⚡</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Energy & Diet</span>
+        <span style='font-size: 18px; font-weight: 700; color: #000;'>Energy & Diet</span>
     </div>
     """, unsafe_allow_html=True)
     electricity = st.number_input(
@@ -723,7 +727,7 @@ with col3:
     st.markdown("""
     <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
         <span style='font-size: 24px;'>✈️</span>
-        <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Travel</span>
+        <span style='font-size: 18px; font-weight: 700; color: #000;'>Travel</span>
     </div>
     """, unsafe_allow_html=True)
     flights = st.number_input(
@@ -751,11 +755,11 @@ with col_btn1:
     )
 
 with col_btn2:
+    st.caption("✔ All input fields are validated before analysis.")
     analyze_btn = st.button(
         "🌿 Analyze My Impact",
         use_container_width=True
     )
-    st.caption("✔ All input fields are validated before analysis.")
 
 if reset_btn:
     for key in DEFAULT_VALUES:
@@ -779,7 +783,7 @@ with tab1:
         st.markdown("""
         <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>🚗</span>
-            <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Transportation</span>
+            <span style='font-size: 18px; font-weight: 700; color: #000;'>Transportation</span>
         </div>
         """, unsafe_allow_html=True)
         transport = st.selectbox("Primary Transport", ["Car", "Public Transport", "Bike", "Walking"])
@@ -789,17 +793,30 @@ with tab1:
         st.markdown("""
         <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>⚡</span>
-            <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Energy & Diet</span>
+            <span style='font-size: 18px; font-weight: 700; color: #000;'>Energy & Diet</span>
         </div>
         """, unsafe_allow_html=True)
-        electricity = st.number_input("Monthly Electricity (kWh)", min_value=0.0, value=200.0, step=10.0)
+        uploaded_bill = st.file_uploader("Upload Utility Bill (PDF/Image)", type=["pdf", "png", "jpg", "jpeg"])
+        if uploaded_bill is not None:
+            # We use a button to trigger extraction so it doesn't re-run infinitely on every interaction
+            if st.button("Extract Energy Usage"):
+                with st.spinner("Extracting data from bill..."):
+                    extracted_text = extract_text_from_file(uploaded_bill)
+                    parsed_val = parse_energy_consumption(extracted_text)
+                    if parsed_val is not None:
+                        st.session_state.extracted_kwh = float(parsed_val)
+                        st.success(f"Extracted {parsed_val} kWh from bill!")
+                    else:
+                        st.warning("Could not extract energy consumption. Please enter manually.")
+
+        electricity = st.number_input("Monthly Electricity (kWh)", min_value=0.0, value=float(st.session_state.extracted_kwh), step=10.0)
         diet = st.selectbox("Diet Type", ["Vegetarian", "Non-Vegetarian"])
 
     with col3:
         st.markdown("""
         <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>✈️</span>
-            <span style='font-size: 18px; font-weight: 700; color: #e5e7eb;'>Travel</span>
+            <span style='font-size: 18px; font-weight: 700; color: #000;'>Travel</span>
         </div>
         """, unsafe_allow_html=True)
         flights = st.number_input("Annual Flights", min_value=0, value=0, step=1)
@@ -835,7 +852,7 @@ with tab1:
     # -------------------------
     col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
     with col_btn2:
-        analyze_btn = st.button("🌿 Analyze My Impact", width="stretch")
+        analyze_btn = st.button("🌿 Analyze My Impact", use_container_width=True)
 
     if analyze_btn:
 

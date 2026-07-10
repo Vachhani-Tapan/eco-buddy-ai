@@ -7,3 +7,5 @@ reportlab
 Pillow
 requests
 python-dotenv
+pytesseract
+pdfplumber
