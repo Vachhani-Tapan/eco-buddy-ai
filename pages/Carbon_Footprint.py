@@ -108,7 +108,7 @@ with tab_assess:
     if analyze_btn:
         with st.spinner("🌍 Analyzing your carbon footprint..."):
             total, contributors = calculate_footprint(transport, distance, electricity, diet, flights, region)
-        eco_score = calculate_eco_score(total)
+        eco_score = calculate_eco_score(total, contributors)
         insight, recommendations = generate_recommendations(transport, electricity, diet, flights, contributors)
         save_assessment(transport, distance, electricity, diet, flights, total, eco_score)
         st.session_state.analysis = {
