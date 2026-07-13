@@ -21,7 +21,7 @@ from recommendations import generate_recommendations
 # Added for Route Planning & Offsets
 from database import (
     init_marketplace_db, save_journey_profile, get_journey_profiles, delete_journey_profile,
-    save_offset_transaction, get_offset_transactions, delete_offset_transaction,
+    save_offset_transaction, get_offset_transactions, delete_offset_transaction, clear_offset_transactions,
     get_total_offsets, get_total_spend
 )
 from marketplace import (
@@ -1400,18 +1400,17 @@ with tab2:
     if appliances:
         # Build a styled HTML table instead of st.dataframe
         category_icons = {"AC": "❄️", "EV Charger": "🔋", "Heat Pump": "🌡️", "Refrigerator": "🧊", "Lighting": "💡", "Other": "🔌"}
-        table_rows = ""
-        for a in appliances:
-            icon = category_icons.get(a['category'], '🔌')
-            table_rows += f"""
+        table_rows = "".join([
+            f"""
             <tr>
-                <td>{icon} {h(a['name'])}</td>
+                <td>{category_icons.get(a['category'], '🔌')} {h(a['name'])}</td>
                 <td><span style='background:rgba(74,222,128,0.15); padding:4px 10px; border-radius:8px; font-size:13px;'>{h(a['category'])}</span></td>
                 <td style='text-align:center;'>{a['quantity']}</td>
                 <td style='text-align:right;'>{a['power_rating_watts']:.0f} W</td>
                 <td style='text-align:right;'>{a['hours_used_per_day']:.1f} h</td>
                 <td style='text-align:right;'>{a['standby_draw_watts']:.1f} W</td>
-            </tr>"""
+            </tr>""" for a in appliances
+        ])
 
         st.markdown(f"""
         <div style='border:1px solid rgba(134,239,172,0.24); border-radius:16px; overflow:hidden; background:#0f172a; box-shadow:0 24px 70px rgba(0,0,0,0.38);'>
@@ -1671,8 +1670,7 @@ with tab4:
             
             # Button to clear history for demo purposes
             if st.button("Clear History"):
-                for t in transactions:
-                    delete_offset_transaction(t['id'])
+                clear_offset_transactions(1)
                 st.rerun()
         else:
             st.info("No transactions yet. Visit the marketplace to start your portfolio!")

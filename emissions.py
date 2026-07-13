@@ -5,6 +5,9 @@ MAX_ELECTRICITY = 10000
 MAX_FLIGHTS = 365
 
 
+import streamlit as st
+
+@st.cache_data
 def calculate_footprint(
     transport,
     distance,
@@ -66,6 +69,7 @@ def calculate_footprint(
 
     return round(total, 2), contributors
 
+@st.cache_data
 def calculate_eco_score(total_footprint):
     """
     Higher score = better sustainability
