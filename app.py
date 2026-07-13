@@ -301,11 +301,8 @@ st.markdown("""
     }
 
     .stButton > button,
- fix/download-report-button-visibility
-    .stDownloadButton > button {
-
+    .stDownloadButton > button,
     [data-testid="stFormSubmitButton"] > button {
- main
         min-height: 52px;
         padding: 0 28px !important;
         border: none !important;
@@ -320,11 +317,8 @@ st.markdown("""
     }
 
     .stButton > button:hover,
- fix/download-report-button-visibility
-    .stDownloadButton > button:hover {
-
+    .stDownloadButton > button:hover,
     [data-testid="stFormSubmitButton"] > button:hover {
- main
         transform: translateY(-2px);
         background: #101713 !important;
         box-shadow: 0 22px 44px rgba(0, 0, 0, 0.26) !important;
@@ -474,15 +468,9 @@ main
         border: 1px solid rgba(134, 239, 172, 0.28) !important;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32) !important;
     }
- fix/download-report-button-visibility
-            
     .stButton > button:hover,
-    .stDownloadButton > button:hover {
-
-
-    .stButton > button:hover,
+    .stDownloadButton > button:hover,
     [data-testid="stFormSubmitButton"] > button:hover {
- main
         background: linear-gradient(135deg, #111827, #0f2a1a) !important;
         border-color: rgba(134, 239, 172, 0.55) !important;
     }
@@ -691,7 +679,6 @@ st.markdown("---")
 # INPUTS SECTION
 # -------------------------
 
- feature/reset-assessment-button
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -753,11 +740,9 @@ with col3:
 # -------------------------
 # PDF REPORT GENERATION
 
- main
 # -------------------------
 # TABS CONFIGURATION
 # -------------------------
- feature/input-validation-and-error-handling
 col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
 
 with col_btn1:
@@ -767,7 +752,6 @@ with col_btn1:
     )
 
 with col_btn2:
- feature/reset-assessment-button
     analyze_btn = st.button(
         "🌿 Analyze My Impact",
         use_container_width=True
@@ -783,17 +767,11 @@ if reset_btn:
     st.success("✅ Assessment form has been reset.")
     st.rerun()
 
-    st.caption("✔ All input fields are validated before analysis.")
-    analyze_btn = st.button("🌿 Analyze My Impact", use_container_width=True)
- main
-
 tab1, tab2, tab3, tab4 = st.tabs(["🌍 Carbon Footprint", "⚡ Home Energy Audit", "🎮 Gamification", "🗺️ Route Planning & Offsets"])
- main
 
 with tab1:
     st.markdown("<div class='section-header'>📝 Your Lifestyle Profile</div>", unsafe_allow_html=True)
 
- feature/input-validation-and-error-handling
     with st.spinner("🌍 Analyzing your carbon footprint..."):
 
         progress_text = st.empty()
@@ -836,7 +814,6 @@ with tab1:
     st.markdown("<div class='section-header'>📊 Your Carbon Footprint Analysis</div>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
- main
 
     with col1:
         st.markdown("""
@@ -1544,17 +1521,22 @@ with tab3:
     st.markdown("### 🏆 Weekly Challenges")
     
     user_challenges = gf.get_user_challenges(1)
-    enrolled_ids = [c['challenge_id'] for c in user_challenges if c['status'] != 'expired']
-    
+    # Optimize primary evaluation loop by pre-computing challenge states
+    challenge_states = {}
+    for c in user_challenges:
+        if c['status'] != 'expired':
+            challenge_states[c['challenge_id']] = c
+            
     for ch_id, ch_data in gf.CHALLENGES.items():
         with st.expander(f"{ch_data['title']} ({ch_data['xp']} XP) - {ch_data['category']}"):
             st.write(f"Target: {ch_data['target']} {ch_data['unit']}")
-            if ch_id in enrolled_ids:
-                status = [c['status'] for c in user_challenges if c['challenge_id'] == ch_id][-1]
+            if ch_id in challenge_states:
+                state = challenge_states[ch_id]
+                status = state['status']
                 if status == 'completed':
                     st.success("Challenge Completed! 🎉")
                 else:
-                    current_prog = [c['progress_value'] for c in user_challenges if c['challenge_id'] == ch_id][-1]
+                    current_prog = state['progress_value']
                     st.write(f"Progress: {current_prog} / {ch_data['target']}")
                     
                     prog_val = st.number_input(f"Update Progress for {ch_id}", min_value=0.0, step=1.0, key=f"prog_{ch_id}")
