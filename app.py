@@ -732,7 +732,24 @@ with tab1:
 
     with col2:
         st.markdown("""
-        <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
+            <style>
+            div[data-testid="stFileUploader"] button {
+                width: 110px !important;
+                min-width: 110px !important;
+                padding: 6px 12px !important;
+                margin-left: 16px !important;
+                border-radius: 8px !important;
+            }
+
+            div[data-testid="stFileUploader"] section {
+                display: flex !important;
+                align-items: center !important;
+                gap: 16px !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        st.markdown("""
+        <div style='display: flex; align-items: center; gap: 10px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>⚡</span>
             <span style='font-size: 18px; font-weight: 700; color: #000;'>Energy & Diet</span>
         </div>
@@ -795,7 +812,7 @@ with tab1:
     # col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
     # with col_btn2:
     #     analyze_btn = st.button("🌿 Analyze My Impact")
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
+    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
     with col_btn1:
         reset_btn = st.button("🔄 Reset Assessment")
         if reset_btn:
