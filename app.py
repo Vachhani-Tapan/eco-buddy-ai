@@ -17,6 +17,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from database import init_db, save_assessment, get_assessments, init_gamification_db
 import gamification as gf
 from emissions import calculate_footprint, calculate_eco_score
+from llm_parser import parse_quick_log
 
 from recommendations import generate_recommendations
 from ocr_utils import extract_text_from_file, parse_energy_consumption
@@ -24,7 +25,7 @@ from ocr_utils import extract_text_from_file, parse_energy_consumption
 # Added for Route Planning & Offsets
 from database import (
     init_marketplace_db, save_journey_profile, get_journey_profiles, delete_journey_profile,
-    save_offset_transaction, get_offset_transactions, delete_offset_transaction,
+    save_offset_transaction, get_offset_transactions, delete_offset_transaction, clear_offset_transactions,
     get_total_offsets, get_total_spend
 )
 from marketplace import (
@@ -86,18 +87,12 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     :root {
-        --sky: #b9d7f4;
-        --sky-soft: #d9eafa;
-        --field: #5f8f36;
-        --leaf: #78a945;
-        --moss: #2f5e32;
-        --ink: #080b0a;
-        --muted: #66736a;
-        --paper: rgba(255, 255, 255, 0.76);
-        --paper-strong: rgba(255, 255, 255, 0.92);
-        --line: rgba(38, 64, 41, 0.12);
-        --shadow: 0 24px 70px rgba(38, 67, 44, 0.18);
-        --radius: 18px;
+        --ink: #111827;
+        --muted: #6b7280;
+        --paper: rgba(255,255,255,0.75);
+        --paper-strong: rgba(255,255,255,0.95);
+        --line: rgba(0,0,0,0.08);
+        --shadow: 0 10px 30px rgba(0,0,0,0.08);
     }
 
     * {
@@ -110,17 +105,11 @@ st.markdown("""
 
     body,
     [data-testid="stAppViewContainer"] {
-        font-family: 'Inter', sans-serif;
-        color: var(--ink);
+        color: #1f2937;
         background:
-            linear-gradient(180deg, rgba(185, 215, 244, 0.74) 0%, rgba(244, 248, 240, 0.95) 48%, #f7faf3 100%),
-            radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.86), transparent 30%),
-            linear-gradient(135deg, #d7ebff 0%, #f4f8e8 54%, #eaf5df 100%);
-        min-height: 100vh;
-    }
-
-    [data-testid="stHeader"] {
-        background: transparent;
+            radial-gradient(circle at top left, #dcfce7 0%, transparent 30%),
+            radial-gradient(circle at top right, #dbeafe 0%, transparent 30%),
+            #f8fafc !important;
     }
 
     .block-container {
@@ -187,7 +176,9 @@ st.markdown("""
     .metric-card {
         border: 1px solid var(--line);
         border-radius: var(--radius);
-        background: linear-gradient(145deg, var(--paper-strong), rgba(255, 255, 255, 0.64));
+        background: rgba(255,255,255,0.9);
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06);
         box-shadow: 0 18px 50px rgba(57, 86, 47, 0.12);
         backdrop-filter: blur(18px);
         position: relative;
@@ -355,6 +346,7 @@ st.markdown("""
         background: rgba(172, 214, 111, 0.26) !important;
     }
 
+    @media (prefers-color-scheme: dark) {
     /* DARK PREMIUM THEME OVERRIDES */
     :root {
         --sky: #8ec5ff;
@@ -443,8 +435,8 @@ st.markdown("""
     .stNumberInput input,
     .stSelectbox [data-baseweb="select"],
     .stTextArea textarea {
-        background: #ffffff !important;
-        border-color: rgba(148, 163, 184, 0.2) !important;
+        background: #e6f5e9 !important;
+        border-color: rgba(74, 222, 128, 0.4) !important;
         color: #05070a !important;
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
     }
@@ -662,6 +654,7 @@ st.markdown("""
         background-color: #0f172a !important;
         color: #d1d5db !important;
     }
+    } /* end @media (prefers-color-scheme: dark) */
 </style>
 """, unsafe_allow_html=True)
 
@@ -683,71 +676,6 @@ st.markdown("---")
 
 
 # -------------------------
-# INPUTS SECTION
-# -------------------------
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("""
-    <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
-        <span style='font-size: 24px;'>🚗</span>
-        <span style='font-size: 18px; font-weight: 700; color: #000;'>Transportation</span>
-    </div>
-    """, unsafe_allow_html=True)
-    transport = st.selectbox(
-        "Primary Transport",
-        ["Car", "Public Transport", "Bike", "Walking"],
-        key="transport"
-    )
-    distance = st.number_input(
-        "Daily Distance (km)",
-        min_value=0.0,
-        value=10.0,
-        step=1.0,
-        key="distance"
-    )
-
-with col2:
-    st.markdown("""
-    <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
-        <span style='font-size: 24px;'>⚡</span>
-        <span style='font-size: 18px; font-weight: 700; color: #000;'>Energy & Diet</span>
-    </div>
-    """, unsafe_allow_html=True)
-    electricity = st.number_input(
-        "Monthly Electricity (kWh)",
-        min_value=0.0,
-        value=200.0,
-        step=10.0,
-        key="electricity"
-    )
-    diet = st.selectbox(
-        "Diet Type",
-        ["Vegetarian", "Non-Vegetarian"],
-        key="diet"
-    )
-with col3:
-    st.markdown("""
-    <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
-        <span style='font-size: 24px;'>✈️</span>
-        <span style='font-size: 18px; font-weight: 700; color: #000;'>Travel</span>
-    </div>
-    """, unsafe_allow_html=True)
-    flights = st.number_input(
-        "Annual Flights",
-        min_value=0,
-        value=0,
-        step=1,
-        key="flights"
-    )
-    st.info("💡 How many long-distance flights per year?")
-
-
-# -------------------------
-# PDF REPORT GENERATION
-
-# -------------------------
 # TABS CONFIGURATION
 # -------------------------
 col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
@@ -767,188 +695,56 @@ with col_btn2:
 
 if reset_btn:
     for key in DEFAULT_VALUES:
-        st.session_state.pop(key, None)
-
-    st.session_state.pop("analysis", None)
-
+        if key in st.session_state:
+            del st.session_state[key]
     st.success("✅ Assessment form has been reset.")
     st.rerun()
-
-
-
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🌍 Carbon Footprint",
-    "⚡ Home Energy Audit",
-    "🎮 Gamification",
-    "🗺️ Route Planning & Offsets"
-])
-
-with tab1:
-    st.markdown(
-        "<div class='section-header'>📝 Your Lifestyle Profile</div>",
-        unsafe_allow_html=True
-    )
-
-    # Run analysis when button is clicked
-    if analyze_btn:
-        with st.spinner("🌍 Analyzing your carbon footprint..."):
-
-            progress_text = st.empty()
-            progress = st.progress(0)
-
-            progress_text.info("🔍 Validating user inputs...")
-            progress.progress(20)
-            time.sleep(0.5)
-
-            progress_text.info("🌍 Calculating carbon footprint...")
-            progress.progress(40)
-
-            total, contributors = calculate_footprint(
-                transport,
-                distance,
-                electricity,
-                diet,
-                flights,
-            )
-
-            progress_text.info("📊 Calculation completed...")
-            progress.progress(100)
-
-            progress.empty()
-            progress_text.empty()
-
-        eco_score = calculate_eco_score(total)
-
-        insight, recommendations = generate_recommendations(
-            transport,
-            electricity,
-            diet,
-            flights,
-            contributors,
-        )
-
-        save_assessment(
-            transport,
-            distance,
-            electricity,
-            diet,
-            flights,
-            total,
-            eco_score,
-        )
-
-        # Store results
-        st.session_state.analysis = {
-            "transport": transport,
-            "distance": distance,
-            "electricity": electricity,
-            "diet": diet,
-            "flights": flights,
-            "total": total,
-            "eco_score": eco_score,
-            "contributors": contributors,
-            "insight": insight,
-            "recommendations": recommendations,
-        }
-
-    # Display only if analysis exists
-    if "analysis" in st.session_state:
-
-        data = st.session_state.analysis
-
-        st.markdown("### 👤 Your Inputs")
-
-        c1, c2 = st.columns(2)
-
-        with c1:
-            st.write(f"**🚗 Transport:** {data['transport']}")
-            st.write(f"**📍 Daily Distance:** {data['distance']} km")
-            st.write(f"**⚡ Electricity:** {data['electricity']} kWh")
-
-        with c2:
-            st.write(f"**🥗 Diet:** {data['diet']}")
-            st.write(f"**✈️ Annual Flights:** {data['flights']}")
-
-        st.success("✅ Analysis completed!")
-
-        st.markdown("---")
-
-        st.markdown(
-            "<div class='section-header'>📊 Your Carbon Footprint Analysis</div>",
-            unsafe_allow_html=True,
-        )
-    st.caption("✔ All input fields are validated before analysis.")
-    analyze_btn = st.button("🌿 Analyze My Impact", use_container_width=True)
-
-
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🌍 Carbon Footprint",
-    "⚡ Home Energy Audit",
-    "🎮 Gamification",
-    "🗺️ Route Planning & Offsets"
-])
-
-with tab1:
-    st.markdown(
-        "<div class='section-header'>📝 Your Lifestyle Profile</div>",
-        unsafe_allow_html=True
-    )
-
-    if analyze_btn:
-        with st.spinner("🌍 Analyzing your carbon footprint..."):
-
-            progress_text = st.empty()
-            progress = st.progress(0)
-
-            progress_text.info("🔍 Validating user inputs...")
-            progress.progress(20)
-            time.sleep(0.5)
-
-            progress_text.info("🌍 Calculating carbon footprint...")
-            progress.progress(40)
-
-            total, contributors = calculate_footprint(
-                transport, distance, electricity, diet, flights
-            )
-
-            progress_text.info("📊 Calculation completed...")
-            progress.progress(100)
-
-            progress.empty()
-            progress_text.empty()
-
-        eco_score = calculate_eco_score(total)
-
-        insight, recommendations = generate_recommendations(
-            transport, electricity, diet, flights, contributors
-        )
-
-        save_assessment(
-            transport, distance, electricity, diet, flights,
-            total, eco_score
-        )
-
-        st.success("✅ Analysis completed!")
-
-        st.markdown("---")
-    # -------------------------
-    # RESULTS DASHBOARD
-    # -------------------------
-    st.markdown("<div class='section-header'>📊 Your Carbon Footprint Analysis</div>", unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-
 
 tab1, tab2, tab3, tab4 = st.tabs(["🌍 Carbon Footprint", "⚡ Home Energy Audit", "🎮 Gamification", "🗺️ Route Planning & Offsets"])
 
 with tab1:
     st.markdown("<div class='section-header'>📝 Your Lifestyle Profile</div>", unsafe_allow_html=True)
     
-    
-    
     st.markdown("### Region Setting")
     region = st.selectbox("Select Your Region for API Emissions Factor", ["Global", "US", "UK", "EU"])
-    st.markdown("---")
+
+    # -------------------------
+    # QUICK LOG (AI)
+    # -------------------------
+    st.markdown("### 🤖 AI Quick Log")
+    col_ai_input, col_ai_btn = st.columns([4, 1])
+    with col_ai_input:
+        quick_log_text = st.text_area("Let AI auto-fill your profile! Describe your day naturally.", placeholder="e.g., 'I drove 15 miles in my SUV and had a beef steak'", key="quick_log_input", height=68)
+    with col_ai_btn:
+        st.markdown("<div style='height:30px;'></div>", unsafe_allow_html=True)
+        parse_btn = st.button("✨ Parse with AI", use_container_width=True)
+        
+    if parse_btn:
+        if quick_log_text.strip():
+            with st.spinner("Analyzing text..."):
+                parsed_data = parse_quick_log(quick_log_text)
+                if parsed_data:
+                    st.session_state.temp_parsed = parsed_data
+                else:
+                    st.error("Could not parse the text. Please try again.")
+        else:
+            st.warning("Please enter some text first.")
+
+    if "temp_parsed" in st.session_state:
+        tp = st.session_state.temp_parsed
+        st.info(f"**We found:** {tp.get('distance', 10.0)} km by {tp.get('transport', 'Car')}, and {tp.get('diet', 'Vegetarian')} diet. Is this correct?")
+        c_yes, c_no = st.columns(2)
+        with c_yes:
+            if st.button("✅ Yes, use this", key="confirm_yes"):
+                st.session_state.transport = tp.get('transport', 'Car')
+                st.session_state.distance = float(tp.get('distance', 10.0))
+                st.session_state.diet = tp.get('diet', 'Vegetarian')
+                del st.session_state.temp_parsed
+                st.rerun()
+        with c_no:
+            if st.button("❌ No, cancel", key="confirm_no"):
+                del st.session_state.temp_parsed
+                st.rerun()
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -963,7 +759,24 @@ with tab1:
 
     with col2:
         st.markdown("""
-        <div style='display: flex; align-items: center; gap: 8px; margin-bottom: 16px;'>
+            <style>
+            div[data-testid="stFileUploader"] button {
+                width: 110px !important;
+                min-width: 110px !important;
+                padding: 6px 12px !important;
+                margin-left: 16px !important;
+                border-radius: 8px !important;
+            }
+
+            div[data-testid="stFileUploader"] section {
+                display: flex !important;
+                align-items: center !important;
+                gap: 16px !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        st.markdown("""
+        <div style='display: flex; align-items: center; gap: 10px; margin-bottom: 16px;'>
             <span style='font-size: 24px;'>⚡</span>
             <span style='font-size: 18px; font-weight: 700; color: #000;'>Energy & Diet</span>
         </div>
@@ -983,7 +796,7 @@ with tab1:
 
         electricity = st.number_input("Monthly Electricity (kWh)", min_value=0.0, value=float(st.session_state.extracted_kwh), step=10.0)
         diet = st.selectbox("Diet Type", ["Vegetarian", "Non-Vegetarian"])
-
+    
         col1, col2 = st.columns(2)
     with col3:
         st.markdown("""
@@ -994,30 +807,9 @@ with tab1:
         """, unsafe_allow_html=True)
         flights = st.number_input("Annual Flights", min_value=0, value=0, step=1)
         st.info("💡 How many long-distance flights per year?")
+        
 
-        if "analysis" in st.session_state:
-            data = st.session_state.analysis
-            with col1:
-                st.metric(
-                    "🌍 Total Footprint",
-                    f"{data['total']:.2f} kg CO₂"
-                )
-
-            with col2:
-                st.metric(
-                    "🌱 Eco Score",
-                    f"{data['eco_score']}/100"
-                )
-
-            st.markdown("### 💡 AI Insight")
-            st.info(data["insight"])
-
-            st.markdown("### 🌱 Recommendations")
-
-            for rec in data["recommendations"]:
-                st.success(rec)
-        else:
-            st.info("💡 Complete your lifestyle profile above to see your footprint analysis.")
+    
     # PDF REPORT GENERATION
     # -------------------------
     def generate_pdf(total, eco_score, insight):
@@ -1047,7 +839,16 @@ with tab1:
     # col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
     # with col_btn2:
     #     analyze_btn = st.button("🌿 Analyze My Impact")
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 1.5, 1])
+    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
+    with col_btn1:
+        reset_btn = st.button("🔄 Reset Assessment")
+        if reset_btn:
+            for key in DEFAULT_VALUES:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.success("✅ Assessment form has been reset.")
+            st.rerun()
+
     with col_btn2:
         analyze_btn = st.button("🌿 Analyze My Impact")
 
@@ -1191,6 +992,9 @@ with tab1:
                     borderwidth=1
                 )
             )
+
+            st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
+
 
             st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
 
@@ -1570,18 +1374,17 @@ with tab2:
     if appliances:
         # Build a styled HTML table instead of st.dataframe
         category_icons = {"AC": "❄️", "EV Charger": "🔋", "Heat Pump": "🌡️", "Refrigerator": "🧊", "Lighting": "💡", "Other": "🔌"}
-        table_rows = ""
-        for a in appliances:
-            icon = category_icons.get(a['category'], '🔌')
-            table_rows += f"""
+        table_rows = "".join([
+            f"""
             <tr>
-                <td>{icon} {h(a['name'])}</td>
+                <td>{category_icons.get(a['category'], '🔌')} {h(a['name'])}</td>
                 <td><span style='background:rgba(74,222,128,0.15); padding:4px 10px; border-radius:8px; font-size:13px;'>{h(a['category'])}</span></td>
                 <td style='text-align:center;'>{a['quantity']}</td>
                 <td style='text-align:right;'>{a['power_rating_watts']:.0f} W</td>
                 <td style='text-align:right;'>{a['hours_used_per_day']:.1f} h</td>
                 <td style='text-align:right;'>{a['standby_draw_watts']:.1f} W</td>
-            </tr>"""
+            </tr>""" for a in appliances
+        ])
 
         st.markdown(f"""
         <div style='border:1px solid rgba(134,239,172,0.24); border-radius:16px; overflow:hidden; background:#0f172a; box-shadow:0 24px 70px rgba(0,0,0,0.38);'>
@@ -1691,17 +1494,22 @@ with tab3:
     st.markdown("### 🏆 Weekly Challenges")
     
     user_challenges = gf.get_user_challenges(1)
-    enrolled_ids = [c['challenge_id'] for c in user_challenges if c['status'] != 'expired']
-    
+    # Optimize primary evaluation loop by pre-computing challenge states
+    challenge_states = {}
+    for c in user_challenges:
+        if c['status'] != 'expired':
+            challenge_states[c['challenge_id']] = c
+            
     for ch_id, ch_data in gf.CHALLENGES.items():
         with st.expander(f"{ch_data['title']} ({ch_data['xp']} XP) - {ch_data['category']}"):
             st.write(f"Target: {ch_data['target']} {ch_data['unit']}")
-            if ch_id in enrolled_ids:
-                status = [c['status'] for c in user_challenges if c['challenge_id'] == ch_id][-1]
+            if ch_id in challenge_states:
+                state = challenge_states[ch_id]
+                status = state['status']
                 if status == 'completed':
                     st.success("Challenge Completed! 🎉")
                 else:
-                    current_prog = [c['progress_value'] for c in user_challenges if c['challenge_id'] == ch_id][-1]
+                    current_prog = state['progress_value']
                     st.write(f"Progress: {current_prog} / {ch_data['target']}")
                     
                     prog_val = st.number_input(f"Update Progress for {ch_id}", min_value=0.0, step=1.0, key=f"prog_{ch_id}")
@@ -1836,12 +1644,10 @@ with tab4:
             
             # Button to clear history for demo purposes
             if st.button("Clear History"):
-                for t in transactions:
-                    delete_offset_transaction(t['id'])
+                clear_offset_transactions(1)
                 st.rerun()
         else:
             st.info("No transactions yet. Visit the marketplace to start your portfolio!")
-else:
     st.markdown("""
     <style>
     @keyframes bounce {
@@ -2012,3 +1818,79 @@ st.success(
     "Complete the lifestyle form above and click **Analyze My Impact** "
     "to generate your first carbon footprint assessment."
 )
+st.markdown("""
+<style>
+.footer{
+    margin-top:60px;
+
+    /* Stretch outside Streamlit container */
+    width:100vw;
+    margin-left:calc(50% - 50vw);
+    margin-right:calc(50% - 50vw);
+    margin-bottom:-60px;
+
+    padding:50px 30px 25px;
+
+    background:linear-gradient(135deg,#010b07 0%,#04140d 45%,#071c13 100%);
+    color:white;
+    text-align:center;
+
+    box-shadow:0 -12px 35px rgba(0,0,0,.35);
+}
+
+.footer h2{
+    color:white;
+    font-size:38px;
+    font-weight:800;
+    margin-bottom:12px;
+}
+
+.footer p{
+    margin:12px 0;
+    color:#d1fae5;
+    font-size:16px;
+}
+
+.footer hr{
+    border:none;
+    height:1px;
+    background:rgba(255,255,255,.12);
+    margin:28px auto 18px;
+    width:90%;
+}
+
+.footer-bottom{
+    color:#9CA3AF;
+    font-size:14px;
+}
+</style>
+
+<div class="footer">
+
+<h2>🌱 EcoBuddy AI+</h2>
+
+<p>
+Your Personal AI-Powered Carbon Footprint Tracker &amp; Eco Assistant.
+</p>
+
+<p>
+💚 <b>Track</b> &nbsp; • &nbsp;
+📊 <b>Analyze</b> &nbsp; • &nbsp;
+💡 <b>Improve</b>
+</p>
+
+<p>
+Built with ❤️ using <b>Streamlit</b>,
+<b>Google Gemini</b>,
+<b>Python</b>,
+and <b>Pandas</b>.
+</p>
+
+<hr>
+
+<div class="footer-bottom">
+© 2026 EcoBuddy AI+. Encouraging sustainable living, one step at a time.
+</div>
+
+</div>
+""", unsafe_allow_html=True)
