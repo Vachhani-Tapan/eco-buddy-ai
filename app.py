@@ -996,8 +996,6 @@ with tab1:
             st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
 
 
-            st.plotly_chart(fig, width="stretch", config={'displayModeBar': False})
-
         st.markdown("---")
 
         # -------------------------
