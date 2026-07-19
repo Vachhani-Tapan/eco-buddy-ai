@@ -44,9 +44,13 @@ def h(text):
 # INIT
 # -------------------------
 
-init_db()
-init_gamification_db()
-init_marketplace_db()
+@st.cache_resource
+def run_db_initializations():
+    init_db()
+    init_gamification_db()
+    init_marketplace_db()
+
+run_db_initializations()
 
 if 'extracted_kwh' not in st.session_state:
     st.session_state.extracted_kwh = 200.0
